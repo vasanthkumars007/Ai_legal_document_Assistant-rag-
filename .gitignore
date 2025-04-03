@@ -1,2 +1,5 @@
 .qodo
 venv
+data/legal_knowledge/
+data/
+qdrant_storage
