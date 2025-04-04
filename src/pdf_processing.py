@@ -19,3 +19,6 @@ def extract_text_from_all_pdfs(folder_path):
             all_texts[filename] = text
     return all_texts
  
+if __name__ == "__main__":
+    extract_text_from_all_pdfs()
+    
