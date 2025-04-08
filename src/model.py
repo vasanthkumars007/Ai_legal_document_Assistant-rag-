@@ -9,7 +9,7 @@ torch.cuda.empty_cache()
 
 # Load QA Model with 8-bit quantization
 quantization_config = BitsAndBytesConfig(llm_int8_enable_fp32_cpu_offload=True)
-qa_tokenizer = AutoTokenizer.from_pretrained(config.QA_MODEL)
+qa_tokenizer = AutoTokenizer.from_pretrained(config.QA_MODEL, truncation=True)
 qa_model = AutoModelForCausalLM.from_pretrained(
     config.QA_MODEL,
     device_map="auto",  # Automatically map to GPU if available
@@ -43,12 +43,12 @@ def retrieve_legal_knowledge(query):
 def summarize_document(pdf_path):
     """Summarizes the uploaded user document (Doc 2)."""
     doc_text = str(extract_text_from_all_pdfs(pdf_path))
-    print("type of doc text : " ,type(doc_text))
-    print("doc text : ", doc_text)
+   # print("type of doc text : " ,type(doc_text))
+    #print("doc text : ", doc_text)
     retrieved_legal_knowledge = str(retrieve_legal_knowledge(doc_text))
     
-    print("Retrieved Legal Knowledge:", retrieved_legal_knowledge)
-    print("Type:", type(retrieved_legal_knowledge))
+    print("Retrieved Legal Knowledge from qdrant :", retrieved_legal_knowledge)
+    #print("Type:", type(retrieved_legal_knowledge))
     
     combined_text = retrieved_legal_knowledge + "\n" + doc_text
     summary = summarization_pipeline(combined_text, max_length=300, min_length=100, do_sample=False)
@@ -60,7 +60,7 @@ def answer_legal_question(query, pdf_path):
     doc_summary = summarize_document(pdf_path)
     retrieved_legal_knowledge = retrieve_legal_knowledge(query)
     
-    prompt = f"User Query: {query}\nLegal Context: {retrieved_legal_knowledge}\nDocument Summary: {doc_summary}\nAnswer:"
+    prompt = f" User Query: {query}\nLegal Context: {retrieved_legal_knowledge}\nDocument Summary: {doc_summary}\nAnswer:"
     
     response = qa_pipeline(prompt, max_length=200, do_sample=True)
     return response[0]["generated_text"]
@@ -74,6 +74,5 @@ if __name__ == "__main__":
     summary = summarize_document(pdf_path)
     print("Summary:", summary)
     
-    answer = answer_legal_question(query, pdf_path)
-    print("Answer:", answer) 
-    
+    #answer = answer_legal_question(query, pdf_path)
+    #print("Answer:", answer)
