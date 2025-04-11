@@ -4,7 +4,7 @@ from embedding_store import store_legal_knowledge
 from model import summarize_document, answer_legal_question
 
 app = FastAPI()
-
+ 
 @app.post("/store_legal_knowledge/")
 async def store_knowledge():
     return store_legal_knowledge()
