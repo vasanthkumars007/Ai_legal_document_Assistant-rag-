@@ -1,28 +1,30 @@
-import re
-
-def chunk_by_section(text):
-    lines = text.split("\n")
+def chunk_by_word_count(text, max_words=200, overlap=50):
+    words = text.split()
     chunks = []
-    current_chunk = []
 
-    section_pattern = re.compile(r"^(CHAPTER\s+[IVXLCDM]+|[0-9]+\.)")
+    for i in range(0, len(words), max_words - overlap):
+        chunk = words[i:i + max_words]
+        if chunk:
+            chunks.append(" ".join(chunk))
 
-    for line in lines:
-        line = line.strip()
-        if section_pattern.match(line) and current_chunk:
-            # Start of new section, save current one
-            chunks.append("\n".join(current_chunk).strip())
-            current_chunk = [line]
-        else:
-            current_chunk.append(line)
+    return chunks
+"""
+       if you want to continue with sentce level chunking, you can use the following code:
 
-    if current_chunk:
-        chunks.append("\n".join(current_chunk).strip())
+       
+
+       import re
+
+def chunk_by_sentences(text, max_sentences=6, overlap=2):
+    # Split the text into sentences using period (.) as delimiter
+    sentences = re.split(r'(?<=[.?!])\s+', text.strip())
+    chunks = []
+
+    for i in range(0, len(sentences), max_sentences - overlap):
+        chunk = sentences[i:i + max_sentences]
+        if chunk:
+            chunks.append(" ".join(chunk))
 
     return chunks
 
-
-if __name__ == "__main__":
-
-    chunk_by_section(text)
-    
+"""

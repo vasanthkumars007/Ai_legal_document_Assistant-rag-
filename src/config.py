@@ -1,5 +1,5 @@
 QDRANT_URL = "http://localhost:6333"
 COLLECTION_NAME = "legal_knowledge"
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-SUMMARIZATION_MODEL = "google-t5/t5-small"
+SUMMARIZATION_MODEL = "google/pegasus-xsum"
 QA_MODEL = "HuggingFaceH4/zephyr-7b-alpha"
