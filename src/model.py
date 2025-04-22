@@ -1,7 +1,7 @@
 import sys
 sys.path.append('D:/Data_Aces/Codes/ai_legal_assistant/src')
 
-from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer, pipeline, BitsAndBytesConfig
+from transformers import AutoModelForQuestionAnswering, AutoModelForSeq2SeqLM, AutoTokenizer, pipeline, BitsAndBytesConfig
 from .pdf_processing import extract_text_from_all_pdfs, extract_text_from_pdf
 from .embedding_store import qdrant, embedding_model
 from .config import QDRANT_URL, EMBEDDING_MODEL, COLLECTION_NAME, QA_MODEL, SUMMARIZATION_MODEL
@@ -19,24 +19,18 @@ class ModelRegistry:
     def load_models(self):
         print("🚀 Loading QA and Summarization models...")
 
-        quantization_config = BitsAndBytesConfig(llm_int8_enable_fp32_cpu_offload=True)
-
-        # Load QA model
+        # Load QA model (Extractive QA)
         qa_tokenizer = AutoTokenizer.from_pretrained(QA_MODEL)
-        qa_model = AutoModelForCausalLM.from_pretrained(
-            QA_MODEL,
-            device_map="auto",
-            quantization_config=quantization_config
-        )
-        self.qa_pipeline = pipeline("text-generation", model=qa_model, tokenizer=qa_tokenizer)
+        qa_model = AutoModelForQuestionAnswering.from_pretrained(QA_MODEL)
+        self.qa_pipeline = pipeline("question-answering", model=qa_model, tokenizer=qa_tokenizer)
+
 
         # Load Summarization model
         summarization_tokenizer = AutoTokenizer.from_pretrained(SUMMARIZATION_MODEL)
         summarization_model = AutoModelForSeq2SeqLM.from_pretrained(
             SUMMARIZATION_MODEL,
             device_map="auto",
-            load_in_8bit=True
-        )
+        ) 
         self.summarization_pipeline = pipeline("summarization", model=summarization_model, tokenizer=summarization_tokenizer)
 
         print("✅ Models loaded.")
@@ -65,10 +59,18 @@ def summarize_document(pdf_path):
     combined_text = str(retrieved_legal_knowledge) + "\n" + str(doc_text)
 
     tokenizer = model_registry.summarization_pipeline.tokenizer
-    model_max_length = tokenizer.model_max_length or 512  # Usually 512
+    model_max_length = getattr(tokenizer, "model_max_length", 512)
+    model_max_length = min(model_max_length, 512)  # Just to be safe
+
 
     # Tokenize and split into chunks
-    input_tokens = tokenizer.encode(combined_text)
+    input_tokens = tokenizer.encode(combined_text, truncation=False)
+    """This ensures:
+                    truncation=False avoids dropping extra tokens.
+                    Tokens are split into equal-sized safe chunks (≤ 512).
+                    ✅ No loss of content."""
+    
+
     chunks = [input_tokens[i:i + model_max_length] for i in range(0, len(input_tokens), model_max_length)]
 
     # Summarize each chunk
@@ -77,8 +79,8 @@ def summarize_document(pdf_path):
         chunk_text = tokenizer.decode(chunk, skip_special_tokens=True)
         summary = model_registry.summarization_pipeline(
             chunk_text,
-            max_length=300,
-            min_length=100,
+            max_length=250,
+            min_length=75,
             do_sample=False
         )
         summaries.append(summary[0]["summary_text"])
@@ -94,7 +96,7 @@ def summarize_document(pdf_path):
             summary = model_registry.summarization_pipeline(
                 chunk,
                 max_length=300,
-                min_length=100,
+                min_length=175,
                 do_sample=False
             )
             final_summaries.append(summary[0]["summary_text"])
@@ -105,21 +107,29 @@ def summarize_document(pdf_path):
 
 
 
-def answer_legal_question(query, pdf_path):
-    """Answers legal questions based on Doc 2 using legal knowledge."""
-    doc_summary = summarize_document(pdf_path)
+def answer_legal_question(query, doc_summary):
+    """Answers legal questions based on precomputed summary and retrieved legal knowledge."""
     retrieved_legal_knowledge = retrieve_legal_knowledge(query)
-    
-    prompt = f" User Query: {query}\nLegal Context: {retrieved_legal_knowledge}\nDocument Summary: {doc_summary}\nAnswer:"
-    
-    response = model_registry.qa_pipeline(prompt, max_length=200, do_sample=True)
-    return response[0]["generated_text"]
+    print ("Retrieved legal knowledge:", retrieved_legal_knowledge)
+    response = model_registry.qa_pipeline({
+        "context": f"{retrieved_legal_knowledge}\n{doc_summary}",
+        "question": query
+    })
+
+    response = model_registry.qa_pipeline(
+        question=query,
+        context= f"Data from vector database:{retrieved_legal_knowledge}\nsummary made by t5 model :{doc_summary}"
+    )
+
+
+    return response["answer"]
+
 
 
 # Example usage
 if __name__ == "__main__":
     pdf_path = "D:/Data_Aces/Codes/ai_legal_assistant/data/user_uploads"  # Replace with your actual PDF path
-    query = "What are the three ways in which a person can be said to abet the doing of a thing under the law of abetment?"
+    #query = "What are the three ways in which a person can be said to abet the doing of a thing under the law of abetment?"
     
     summary = summarize_document(pdf_path)
     print("Summary:", summary)
