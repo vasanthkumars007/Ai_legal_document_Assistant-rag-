@@ -19,7 +19,7 @@ if not qdrant.collection_exists(collection_name=COLLECTION_NAME):
 
 def store_legal_knowledge():
     """Extracts text from legal knowledge PDFs and stores in Qdrant."""
-    folder_path = "D:/Data_Aces/Codes/ai_legal_assistant/data/legal_knowledge/"
+    folder_path = "D:/Data_Aces/Codes/ai_legal_assistant/backend/data/legal_knowledge/"
     all_texts = extract_text_from_all_pdfs(folder_path)
     #print("Extracted texts from PDFs:", all_texts)
     for filename, text in all_texts.items():

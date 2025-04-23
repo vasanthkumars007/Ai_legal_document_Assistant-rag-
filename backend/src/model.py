@@ -1,5 +1,5 @@
 import sys
-sys.path.append('D:/Data_Aces/Codes/ai_legal_assistant/src')
+sys.path.append('D:/Data_Aces/Codes/ai_legal_assistant/backend/src')
 
 from transformers import AutoModelForQuestionAnswering, AutoModelForSeq2SeqLM, AutoTokenizer, pipeline, BitsAndBytesConfig
 from .pdf_processing import extract_text_from_all_pdfs, extract_text_from_pdf
@@ -7,6 +7,7 @@ from .embedding_store import qdrant, embedding_model
 from .config import QDRANT_URL, EMBEDDING_MODEL, COLLECTION_NAME, QA_MODEL, SUMMARIZATION_MODEL
 import torch
 from accelerate import init_empty_weights
+import re
 
 torch.cuda.empty_cache()
 
@@ -17,12 +18,17 @@ class ModelRegistry:
         self.summarization_pipeline = None
 
     def load_models(self):
-        print("🚀 Loading QA and Summarization models...")
+        print(" Loading QA and Summarization models...")
 
         # Load QA model (Extractive QA)
-        qa_tokenizer = AutoTokenizer.from_pretrained(QA_MODEL)
-        qa_model = AutoModelForQuestionAnswering.from_pretrained(QA_MODEL)
-        self.qa_pipeline = pipeline("question-answering", model=qa_model, tokenizer=qa_tokenizer)
+        # Load TinyLlama for QA (Text Generation for answering questions)
+        self.qa_pipeline = pipeline(
+            "text-generation", 
+            model="TinyLlama/TinyLlama-1.1B-Chat-v1.0", 
+            torch_dtype=torch.bfloat16, 
+            device_map="auto"
+        )
+
 
 
         # Load Summarization model
@@ -37,7 +43,7 @@ class ModelRegistry:
 
 # Singleton object
 model_registry = ModelRegistry()
-def retrieve_legal_knowledge(query):
+def retrieve_legal_knowledge(query,limit=5):
     """Retrieves relevant legal knowledge from Qdrant."""
     vector = embedding_model.encode([query]).tolist()[0]
     
@@ -108,23 +114,34 @@ def summarize_document(pdf_path):
 
 
 def answer_legal_question(query, doc_summary):
-    """Answers legal questions based on precomputed summary and retrieved legal knowledge."""
-    retrieved_legal_knowledge = retrieve_legal_knowledge(query)
-    print ("Retrieved legal knowledge:", retrieved_legal_knowledge)
-    response = model_registry.qa_pipeline({
-        "context": f"{retrieved_legal_knowledge}\n{doc_summary}",
-        "question": query
-    })
+    """Answers legal questions based on precomputed summary and retrieved legal knowledge using TinyLlama."""
+    retrieved_legal_knowledge = retrieve_legal_knowledge(query,limit=1)
+    print("Retrieved legal knowledge:", retrieved_legal_knowledge)
 
-    response = model_registry.qa_pipeline(
-        question=query,
-        context= f"Data from vector database:{retrieved_legal_knowledge}\nsummary made by t5 model :{doc_summary}"
+    # Prepare TinyLlama chat-based prompt
+    messages = [
+        {"role": "system", "content": "You are a helpful and knowledgeable legal assistant. Answer questions precisely and clearly."},
+        {"role": "user", "content": f"Based on this query: {query}, and context: {retrieved_legal_knowledge}, and document summary: {doc_summary}, provide a clear and structured legal answer in simple language."}
+
+    ]
+
+    # Generate response using TinyLlama
+    prompt = model_registry.qa_pipeline.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    outputs = model_registry.qa_pipeline(
+        prompt,
+        max_new_tokens=250,
+        temperature=0.4,     # Lower temperature = more focused output
+        top_p=0.85,
+        top_k=40,
+        do_sample=True
     )
 
-
-    return response["answer"]
-
-
+    
+    # Try to extract only the last assistant message
+    generated = outputs[0]["generated_text"]
+    match = re.search(r"<\|assistant\|>(.*)", generated, re.DOTALL)
+    assistant_response = match.group(1).strip() if match else generated.strip()
+    return assistant_response
 
 # Example usage
 if __name__ == "__main__":

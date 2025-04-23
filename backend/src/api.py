@@ -1,20 +1,31 @@
 from fastapi import FastAPI, File, UploadFile, Form
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import os
 from .embedding_store import store_legal_knowledge
 from .model import model_registry, summarize_document, answer_legal_question
 
 
-# 🔁 Store the latest document summary for reuse in legal_chat
+
+
+#  Store the latest document summary for reuse in legal_chat
 latest_summary = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("🔧 Loading models at startup...")
+    print(" Loading models at startup...")
     model_registry.load_models()
     yield  # <-- this is where the app runs
-    print("🛑 Shutting down... (if needed)")
+    print(" Shutting down... ")
 
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 async def root():
@@ -28,7 +39,7 @@ async def store_knowledge():
 async def upload_pdf(file: UploadFile = File(...)):
     global latest_summary
 
-    file_path = f"D:/Data_Aces/Codes/ai_legal_assistant/data/user_uploads/{file.filename}"
+    file_path = f"D:/Data_Aces/Codes/ai_legal_assistant/backend/data/user_uploads/{file.filename}"
     with open(file_path, "wb") as f:
         f.write(await file.read())
 
