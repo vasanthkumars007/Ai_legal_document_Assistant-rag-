@@ -116,11 +116,11 @@ def summarize_document(pdf_path):
 def answer_legal_question(query, doc_summary):
     """Answers legal questions based on precomputed summary and retrieved legal knowledge using TinyLlama."""
     retrieved_legal_knowledge = retrieve_legal_knowledge(query,limit=1)
-    print("Retrieved legal knowledge:", retrieved_legal_knowledge)
+    #print("Retrieved legal knowledge:", retrieved_legal_knowledge)
 
     # Prepare TinyLlama chat-based prompt
     messages = [
-        {"role": "system", "content": "You are a helpful and knowledgeable legal assistant. Answer questions precisely and clearly."},
+        {"role": "system", "content": "You are a highly skilled legal assistant. If the provided context does not contain sufficient legal information, politely reply: 'I am a legal assistant and cannot assist with non-legal or out-of-domain questions.'Otherwise, provide a clear, well-structured answer organized under the following headings: 'Key Laws', 'Employee Rights', and 'Compliance Requirements'. Provide clear, concise, and complete answers in a structured format. Ensure all sentences are complete and end properly with punctuation. Do not leave answers incomplete."},
         {"role": "user", "content": f"Based on this query: {query}, and context: {retrieved_legal_knowledge}, and document summary: {doc_summary}, provide a clear and structured legal answer in simple language."}
 
     ]
@@ -129,11 +129,11 @@ def answer_legal_question(query, doc_summary):
     prompt = model_registry.qa_pipeline.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     outputs = model_registry.qa_pipeline(
         prompt,
-        max_new_tokens=250,
-        temperature=0.4,     # Lower temperature = more focused output
-        top_p=0.85,
-        top_k=40,
-        do_sample=True
+        max_new_tokens=100,
+        temperature=0.1,     # Lower temperature = more focused output
+        top_p=0.6,         # Top-p sampling
+        top_k=10,         # Top-k sampling
+        do_sample=False
     )
 
     
