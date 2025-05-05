@@ -31,7 +31,7 @@ class ModelRegistry:
 
 
         # Load Summarization model
-        summarization_tokenizer = AutoTokenizer.from_pretrained(SUMMARIZATION_MODEL)
+        summarization_tokenizer = AutoTokenizer.from_pretrained(SUMMARIZATION_MODEL) 
         summarization_model = AutoModelForSeq2SeqLM.from_pretrained(
             SUMMARIZATION_MODEL,
             device_map="auto",
@@ -57,100 +57,24 @@ def retrieve_legal_knowledge(query,limit=5):
     return " ".join(retrieved_texts)
 
 def summarize_document(pdf_path):
-    """Summarizes the uploaded user document (Doc 2) using TinyLlama with legal-specific prompt and chunking."""
-
-    # Step 1: Extract document text and retrieve relevant legal knowledge
+    """Summarizes the uploaded user document (Doc 2) using chunking."""
+    global doc_text
     doc_text = extract_text_from_pdf(pdf_path)
     retrieved_legal_knowledge = retrieve_legal_knowledge(doc_text)
 
     combined_text = str(retrieved_legal_knowledge) + "\n" + str(doc_text)
 
-    # Step 2: Prepare tokenizer and chunking parameters
-    tokenizer = model_registry.qa_pipeline.tokenizer
-    model_max_length = getattr(tokenizer, "model_max_length", 2048)
-    safe_chunk_length = min(model_max_length, 1024)  # safer, to fit prompt overhead
-
-    input_tokens = tokenizer.encode(combined_text, truncation=False)
-    chunks = [input_tokens[i:i + safe_chunk_length] for i in range(0, len(input_tokens), safe_chunk_length)]
-
-    summaries = []
-    for chunk in chunks:
-        chunk_text = tokenizer.decode(chunk, skip_special_tokens=True)
-
-        # Step 3: Prepare legal-specific summarization prompt (similar to your qa_pipeline style)
-        messages = [
-            {"role": "system", "content": (
-                "You are a highly skilled legal assistant specializing in summarizing legal notices and documents. "
-                "Provide a clear, structured, and concise summary of the following legal text. Focus on the following sections: "
-                "'Parties Involved', 'Key Legal Issues', 'Main Obligations', and 'Deadlines or Actions Required'. "
-                "Ensure all sentences are complete, clear, and written in formal but simple language appropriate for legal notices."
-            )},
-            {"role": "user", "content": f"Summarize the following legal document:\n\n{chunk_text}"}
-        ]
-
-        prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-
-        output = model_registry.qa_pipeline(
-            prompt,
-            max_new_tokens=300,
-            temperature=0.2,
-            top_p=0.6,
-            top_k=10,
-            do_sample=False
-        )
-
-        generated = output[0]["generated_text"]
-        match = re.search(r"<\|assistant\|>(.*)", generated, re.DOTALL)
-        summary = match.group(1).strip() if match else generated.strip()
-
-        summaries.append(summary)
-
-    # Step 4: Combine summaries and re-summarize if too long
-    combined_summary = " ".join(summaries)
-    combined_summary_tokens = tokenizer.encode(combined_summary)
-
-    if len(combined_summary_tokens) > safe_chunk_length:
-        # Re-summarize final combined summary
-        messages = [
-            {"role": "system", "content": (
-                "You are a legal assistant summarizing combined legal document summaries. "
-                "Produce a final concise and structured summary focusing on: "
-                "'Parties Involved', 'Key Legal Issues', 'Main Obligations', and 'Deadlines or Actions Required'."
-            )},
-            {"role": "user", "content": f"Summarize the following combined summaries:\n\n{combined_summary}"}
-        ]
-
-        prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-
-        output = model_registry.qa_pipeline(
-            prompt,
-            max_new_tokens=400,
-            temperature=0.2,
-            top_p=0.6,
-            top_k=10,
-            do_sample=False
-        )
-
-        generated = output[0]["generated_text"]
-        match = re.search(r"<\|assistant\|>(.*)", generated, re.DOTALL)
-        final_summary = match.group(1).strip() if match else generated.strip()
-
-        return final_summary
-
-    return combined_summary
-
-
-    """tokenizer = model_registry.summarization_pipeline.tokenizer
+    tokenizer = model_registry.summarization_pipeline.tokenizer
     model_max_length = getattr(tokenizer, "model_max_length", 512)
     model_max_length = min(model_max_length, 512)  # Just to be safe
 
 
     # Tokenize and split into chunks
     input_tokens = tokenizer.encode(combined_text, truncation=False)
-    This ensures:
+    """This ensures:
                     truncation=False avoids dropping extra tokens.
                     Tokens are split into equal-sized safe chunks (≤ 512).
-                    ✅ No loss of content.
+                    ✅ No loss of content."""
     
 
     chunks = [input_tokens[i:i + model_max_length] for i in range(0, len(input_tokens), model_max_length)]
@@ -185,7 +109,7 @@ def summarize_document(pdf_path):
 
         return " ".join(final_summaries)
     
-    return final_summary_input"""
+    return final_summary_input
 
 
 

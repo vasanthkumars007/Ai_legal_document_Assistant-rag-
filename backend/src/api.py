@@ -49,13 +49,13 @@ async def upload_pdf(file: UploadFile = File(...)):
 
     summary = summarize_document(file_path)
     latest_summary = summary  # <-- Store for later use
-
+    global doc_text
     return {"summary": summary}
 
 
 @app.post("/legal_chat/")
 async def ask_question(query: str = Form(...)):
-    global latest_summary
+    global doc_text
 
     if latest_summary is None:
         return {"error": "No document has been summarized yet."}
