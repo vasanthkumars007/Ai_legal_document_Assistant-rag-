@@ -41,6 +41,12 @@ When a user asks a follow-up question about the uploaded document, the system ag
 
 ---
 
+
+## 🧪 Sample I/O
+
+![Architecture](./screenshots/rag_architecture.png)
+![Frontend](./screenshots/chat_ui.jpg)
+
 ## 🧰 Setup Instructions
 
 ```bash

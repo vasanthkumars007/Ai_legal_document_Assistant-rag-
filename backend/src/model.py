@@ -79,14 +79,29 @@ def summarize_document(pdf_path):
 
         # Step 3: Prepare legal-specific summarization prompt (similar to your qa_pipeline style)
         messages = [
-            {"role": "system", "content": (
-                "You are a highly skilled legal assistant specializing in summarizing legal notices and documents. "
-                "Provide a clear, structured, and concise summary of the following legal text. Focus on the following sections: "
-                "'Parties Involved', 'Key Legal Issues', 'Main Obligations', and 'Deadlines or Actions Required'. "
-                "Ensure all sentences are complete, clear, and written in formal but simple language appropriate for legal notices."
-            )},
-            {"role": "user", "content": f"Summarize the following legal document:\n\n{chunk_text}"}
+            {
+                "role": "system",
+                "content": (
+                    "You are a highly skilled legal assistant. Your task is to summarize legal documents in a clear and structured way.\n\n"
+                    "**Your summary must begin by explicitly identifying:**\n"
+                    "• From: The person or organization that issued the notice\n"
+                    "• To: The person or organization that received the notice\n\n"
+                    "Do not infer names — only include them if clearly mentioned. If the names are not mentioned, write 'Not specified'.\n\n"
+                    "Then continue the summary under these sections:\n"
+                    "1. Parties Involved  Briefly describe the roles (e.g., employee, employer)\n"
+                    "2. Key Legal Issues  Summarize the main legal matters raised\n"
+                    "3. Main Demands or Obligations  Summarize what the issuer is asking for or asserting\n"
+                    "4. Actions Required / Deadlines  Mention any actions demanded or deadlines given\n\n"
+                    "Write in formal but clear and simple legal language."
+                )
+            },
+            {
+                "role": "user",
+                "content": f"Summarize the following legal document:\n\n{chunk_text}"
+            }
         ]
+
+
 
         prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
@@ -115,7 +130,7 @@ def summarize_document(pdf_path):
             {"role": "system", "content": (
                 "You are a legal assistant summarizing combined legal document summaries. "
                 "Produce a final concise and structured summary focusing on: "
-                "'Parties Involved', 'Key Legal Issues', 'Main Obligations', and 'Deadlines or Actions Required'."
+                "'From' (who issued the notice), 'To' (whom the notice is addressed to),'Parties Involved', 'Key Legal Issues', 'Main Obligations', and 'Deadlines or Actions Required'."
             )},
             {"role": "user", "content": f"Summarize the following combined summaries:\n\n{combined_summary}"}
         ]
@@ -213,6 +228,8 @@ def answer_legal_question(query, doc_text):
         top_k=10,         # Top-k sampling
         do_sample=False
     )
+
+    
 
     
     # Try to extract only the last assistant message
