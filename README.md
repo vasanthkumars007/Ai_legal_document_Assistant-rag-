@@ -1,87 +1,67 @@
-# AI Legal Documnet Assistant (RAG)
+# 🧾 AI-Powered Legal Document Assistant using SLM and Qdrant
 
-One Paragraph of project description goes here
+The AI Legal Document Assistant is an intelligent system designed to summarize and explain legal documents using Small Language Models (SLMs) and vector similarity search. When a user uploads a legal PDF, the document is parsed and broken into overlapping chunks. These chunks are embedded into high-dimensional vectors and stored in a Qdrant vector database.
 
-## Getting Started
+During summarization, the system retrieves relevant legal context from Qdrant based on semantic similarity, then combines it with the uploaded document text. The summarization model uses this contextualized input to generate a clear, structured summary.
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+When a user asks a follow-up question about the uploaded document, the system again queries Qdrant to find the most relevant legal knowledge. The retrieved context, along with the user's question and the document summary, is passed to the TinyLlama SLM to generate an accurate and easy-to-understand legal response.
 
-### Prerequisites
+---
 
-What things you need to install the software and how to install them
 
-```
-Give examples
-```
 
-### Installing
+## 🚀 Features
 
-A step by step series of examples that tell you how to get a development env running
+- 🔍 Summarize uploaded legal documents
+- 🤖 Answer user legal questions contextually
+- 💾 Uses Qdrant vector DB for fast semantic retrieval
+- 🧠 Powered by TinyLlama & SentenceTransformers (SLM may change Accordingly to specific usage)
+- 📦 FastAPI backend + React frontend (optional)
 
-Say what the step will be
+## 🛠️ Tech Stack
 
-```
-Give the example
-```
+| Layer        | Tech                                 |
+|--------------|--------------------------------------|
+| Backend      | Python, FastAPI                      |
+| AI Models    | TinyLlama, BART, SentenceTransformers|
+| Vector Store | Qdrant                               |
+| Embeddings   | all-MiniLM-L6-v2                     |
+| Frontend     | React (with or without Tailwind)     |
+| Parsing      | pdfplumber                           |
 
-And repeat
+---
+## ⚙️ How It Works
 
-```
-until finished
-```
+1. Legal PDFs (Doc 1) are chunked and embedded
+2. Stored in Qdrant (vector DB)
+3. Users upload documents (Doc 2)
+4. System summarizes them
+5. Users ask legal questions → retrieved context → passed to TinyLlama
+6. Model answers with legal clarity
 
-End with an example of getting some data out of the system or using it for a little demo
+---
 
-## Running the tests
+## 🧰 Setup Instructions
 
-Explain how to run the automated tests for this system
+```bash
+# 1. Clone the repo
+git clone https://github.com/your-username/ai-legal-assistant
+cd ai-legal-assistant
 
-### Break down into end to end tests
+# 2. Create a virtual environment
+python -m venv venv
+source venv/bin/activate  # or venv\Scripts\activate on Windows
 
-Explain what these tests test and why
+# 3. Install dependencies
+pip install -r requirements.txt
 
-```
-Give an example
-```
+# 4. Run Qdrant via Docker
+docker run -p 6333:6333 -v $(pwd)/qdrant_storage:/qdrant/storage qdrant/qdrant
 
-### And coding style tests
+# 5. Launch FastAPI
+python main.py
 
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-## Deployment
-
-Add additional notes about how to deploy this on a live system
-
-## Built With
-
-* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
-* [Maven](https://maven.apache.org/) - Dependency Management
-* [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
-
-## Contributing
-
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
-
-## Versioning
-
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
-
-## Authors
-
-* **Billie Thompson** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
-
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
-
-## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
 
-## Acknowledgments
 
-* Hat tip to anyone whose code was used
-* Inspiration
-* etc
