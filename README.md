@@ -65,7 +65,8 @@ pip install -r requirements.txt
 docker run -p 6333:6333 -v $(pwd)/qdrant_storage:/qdrant/storage qdrant/qdrant
 
 # 5. Launch FastAPI
-python main.py ```
+python main.py
+```
 
 
 
